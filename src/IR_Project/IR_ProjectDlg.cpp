@@ -94,6 +94,7 @@ BEGIN_MESSAGE_MAP(CIR_ProjectDlg, CDialog)
 	ON_BN_CLICKED(IDC_SHOW_BUTTON, OnShowButton)
 	ON_BN_CLICKED(IDC_SET_GRP_BUTTON, OnSetGrpButton)
 	ON_BN_CLICKED(IDC_DIAGNOSTICS_BUTTON, OnDiagnosticsButton)
+	ON_BN_CLICKED(IDC_BUTTON2, OnExit)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -130,9 +131,13 @@ BOOL CIR_ProjectDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	m_ResultsList.InsertColumn( 1, "#", LVCFMT_CENTER, 25 );
 	m_ResultsList.InsertColumn( 2, " Document ID ", LVCFMT_LEFT, 200 );
+	m_ResultsList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+
+
+	m_FileViewer.Initialize();
+
 
 	CAlgorithmManager::Instance()->SetListener( this );
-	
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -196,7 +201,7 @@ void CIR_ProjectDlg::OnBuildButton()
 	//get the path:
 	CString Path;
 	m_PathEdit.GetWindowText( Path );
-	CAlgorithmManager::Instance()->SetSearchedFilesPath( Path.GetBuffer(40) );
+	CAlgorithmManager::Instance()->SetSearchedFilesPath( Path.GetBuffer(100) );
 	CAlgorithmManager::Instance()->BuildDataBase();
 }
 
@@ -205,12 +210,20 @@ void CIR_ProjectDlg::OnSearchButton()
 	CWaitCursor Cursor;		//shows "busy" mouse
 
 	CString Query;
-	
+	CString Answer;
+	Answer=" ";
+
 	m_QueryEdit.GetWindowText( Query );
 	TDocIdVector ResultsSortedVector = CAlgorithmManager::Instance()->Search(
-		Query.GetBuffer(100) );
+		Query.GetBuffer(100) ,Answer);
 	
 	int n = ResultsSortedVector.size();
+
+
+	//preparing the keywords
+	m_strSearchKeywords=Answer;
+	m_FileViewer.ClearKeywords();
+	m_FileViewer.AddKeywords(m_strSearchKeywords);
 
 	PrintResultsToList( ResultsSortedVector );
 }
@@ -291,5 +304,17 @@ void CIR_ProjectDlg::OnDiagnosticsButton()
 	DiagnosticsDialog.m_nStopListSize = CAlgorithmManager::Instance()->GetStopList().size();
 	DiagnosticsDialog.DoModal();
 
+	
+}
+
+void CIR_ProjectDlg::OnOK() 
+{
+	return;	
+}
+
+
+void CIR_ProjectDlg::OnExit() 
+{
+	CDialog::OnOK();
 	
 }

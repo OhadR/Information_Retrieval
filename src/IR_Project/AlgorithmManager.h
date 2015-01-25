@@ -1,6 +1,7 @@
 
 #ifndef _ALGORITHMMANAGER_H_
 #define _ALGORITHMMANAGER_H_
+#include <afx.h>
 
 #include <io.h>			// _findfirst, etc...
 #include <cstdio>		// FILE
@@ -63,7 +64,7 @@ public:
 		BuildHashTable();
 	}
 
-	TDocIdVector Search(const std::string& Query);
+	TDocIdVector Search(const std::string& Query, CString& strAnswer);
 
 	//get a word and retrieve all the documents the word is in:
 	TDocIdVector SearchWord(const std::string& Word);

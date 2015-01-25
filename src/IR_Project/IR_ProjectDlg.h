@@ -13,8 +13,12 @@
 /////////////////////////////////////////////////////////////////////////////
 // CIR_ProjectDlg dialog
 
+#include "TWScriptEdit.h"
+
 class CIR_ProjectDlg : public CDialog, public CRegistrated
 {
+private:
+	CString m_strSearchKeywords;
 // Construction
 public:
 	CIR_ProjectDlg(CWnd* pParent = NULL);	// standard constructor
@@ -27,9 +31,9 @@ public:
 	CListCtrl	m_ResultsList;
 	CEdit	m_QueryEdit;
 	CEdit	m_PathEdit;
-	CEdit	m_FileViewer;
+	CTWScriptEdit	m_FileViewer;
 	//}}AFX_DATA
-
+	
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CIR_ProjectDlg)
 	protected:
@@ -53,6 +57,8 @@ protected:
 	afx_msg void OnShowButton();
 	afx_msg void OnSetGrpButton();
 	afx_msg void OnDiagnosticsButton();
+	virtual void OnOK();
+	afx_msg void OnExit();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 	void PrintResultsToList( const TDocIdVector& ResultsSortedVector );
