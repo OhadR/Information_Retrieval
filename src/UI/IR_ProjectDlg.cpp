@@ -5,7 +5,7 @@
 #include "IR_Project.h"
 #include "IR_ProjectDlg.h"
 #include "DiagnosticsDialog.h"
-#include "Parser.h"
+#include "../IR_Project/Parser.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

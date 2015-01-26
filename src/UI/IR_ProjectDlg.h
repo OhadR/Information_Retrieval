@@ -4,7 +4,7 @@
 #if !defined(AFX_IR_PROJECTDLG_H__3CB11C0B_24FB_4BD8_9A55_21DF81585311__INCLUDED_)
 #define AFX_IR_PROJECTDLG_H__3CB11C0B_24FB_4BD8_9A55_21DF81585311__INCLUDED_
 
-#include "AlgorithmManager.h"
+#include "../IR_Project/AlgorithmManager.h"
 
 #if _MSC_VER > 1000
 #pragma once
