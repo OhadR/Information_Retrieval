@@ -1,0 +1,7 @@
+src/IR_Project/Debug/
+*.classpath
+*.project
+*.sdf
+*.sln
+*.suo
+*.opensdf
