@@ -21,7 +21,7 @@ CParser::CParser()
 	SOperator OrOperator( "|", 3, true /*binary*/);
 	m_operators.push_back(OrOperator);
 	//"then" operator:
-	SOperator ThenOperator( ">", 1, true /*binary*/);
+	SOperator ThenOperator( ">", 6, true /*binary*/);
 	m_operators.push_back(ThenOperator);
 }
 
@@ -41,11 +41,11 @@ CParser* CParser::GetInstance()
 	return &theParser;
 }
 
-TDocIdVector CParser::Parse(const string& expression)
+TDocIdVector CParser::Parse(const string& expression, CString& strAnswer  )
 {
 	Clear();	//for the locals, when i use the same parser for some parsings
 	ConvertExpressionToLowerCase( const_cast<string&>(expression) );
-	if( ! BuildTypedStringColl(expression) )
+	if( ! BuildTypedStringColl(expression , strAnswer) )
 		return 0;
 	BuildExpTree();
 	return EvaluateTree();
@@ -56,7 +56,7 @@ void CParser::PrintTree() const
 	m_DocsTree.PreOrder();
 }
 
-bool CParser::BuildTypedStringColl(string expression)
+bool CParser::BuildTypedStringColl(string expression , CString& strAnswer)
 {
 	string::iterator it = expression.begin();
 	bool	bExpectingWord(true);	//am i expecting a number?
@@ -69,8 +69,12 @@ bool CParser::BuildTypedStringColl(string expression)
 		
 		if( IsOperator(it) )
 		{
-			//only after an operator i will expect a number
-			bExpectingWord = true;
+			//only after an operator i will expect a word
+			//thats how i reject query like "[grp1] ! follow"
+			if( GetOperator(it)._bBinary )
+			{
+				bExpectingWord = true;
+			}
 			STypedString TypedString;
 			TypedString.Type = eOperator;
 			TypedString.Value = GetOperator(it)._operator;
@@ -80,6 +84,13 @@ bool CParser::BuildTypedStringColl(string expression)
 		}
 		else if(IsGroup(it))
 		{
+			int n;
+			if( ! bExpectingWord )
+			{
+				string message("Syntax Error: not expecting a group '" + GetGroup(it, n)._name + "'");
+				ErrorMessageBox( message );
+				return false;
+			}
 			bExpectingWord = false;	//not expecting word after group
 			//if it is group, i put into the tree the NAME, not the value.
 			//so later on the evaluator will look for the value. this is good
@@ -87,7 +98,6 @@ bool CParser::BuildTypedStringColl(string expression)
 			//meaning: user will parse the "V", and only then will put a value into V
 			STypedString TypedString;
 			TypedString.Type = eGroup;
-			int n;
 			TypedString.Value = GetGroup(it, n)._name;
 			if( TypedString.Value == "Error" )
 			{
@@ -95,6 +105,14 @@ bool CParser::BuildTypedStringColl(string expression)
 				string message("Syntax Error: group name is illegal '" + message1 + "'" );
 				ErrorMessageBox( message );
 				return false;
+			}
+			//inserting the words into answer
+			TWordsCollection::const_iterator cit;
+			SGroup Grp = GetGroup(it, n);
+			for(cit = Grp._Words.begin();cit != Grp._Words.end(); ++cit )
+			{
+				strAnswer+= (*cit).c_str();
+				strAnswer+=" ";
 			}
 			//put the brackets back, so in the evaluation i'll know its a group:
 			TypedString.Value += "]";
@@ -120,6 +138,11 @@ bool CParser::BuildTypedStringColl(string expression)
 			STypedString TypedString;
 			TypedString.Type = eWord;
 			TypedString.Value = GetWord(it);
+
+			//inserting the words into answer
+			strAnswer+=(TypedString.Value).c_str();
+			strAnswer+=" ";
+
 			m_TypedStrColl.push_back(TypedString);
 			it += TypedString.Value.size();
 		}
@@ -310,7 +333,7 @@ void CParser::ParseThenOperator(const string& InputString,
 	//ohad >(10,10) mohse
 }
 
-void CParser::HandleUnrecognizedToken( const string& str ) const
+void CParser::HandleUnrecognizedToken( const string& str  ) const
 {
 	string message("Syntax Error: Unrecognized token '" + str + "'");
 	ErrorMessageBox( message );
@@ -600,10 +623,14 @@ TDocIdVector	CParser::HandleThenOperator(const CExNode<string>* Node) const
 	strcpy(line, Node->m_Val.c_str());
 	//line+1, without the ">":
 	char* word = strtok(line+1, " ,()\\\"\n\t");
+
 	int nBefore = atoi(word);
 	word = strtok(NULL, " ,()\\\"\n\t");
-	int nAfter = atoi(word);
 	
+	if( !word )			//TBD
+		return 0;
+	
+	int nAfter = atoi(word);
 	//get operands:
 	CExNode<string>* current = Node->m_LeftChild;
 	TWordsCollection LeftGroup = GetWordsFromNode(current);
@@ -676,8 +703,8 @@ TWordsCollection	CParser::GetWordsFromNode(const CExNode<std::string>* Node) con
 		
 		StrVec.push_back(theWord);
 	}
-	else		//chiild node is not a word and not a group!!!
-		assert(false);
+	/*else		//chiild node is not a word and not a group!!!
+		assert(false);*/
 
 	return StrVec;
 }
