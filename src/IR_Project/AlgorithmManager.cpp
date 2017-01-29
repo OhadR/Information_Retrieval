@@ -8,7 +8,7 @@ using namespace std;
 /*     constants to determine the paths and files names         */
 /****************************************************************/
 
-const string	DEFAULT_SEARCHED_FILES_PATH= "..\\..\\FILES\\";
+const string	DEFAULT_SEARCHED_FILES_PATH= "..\\FILES\\";
 
 void WriteWordInfoToFile(CIndexFile* pFile, const SWordInfo& WI)
 {
@@ -524,9 +524,9 @@ void CAlgorithmManager::GetDocument(IN const std::string& strFirstLineOfDocument
 
 /*****************************************************/
 
-TDocIdVector CAlgorithmManager::Search(const std::string& Query, CString& strAnswer )
+TDocIdVector CAlgorithmManager::Search(const std::string& Query)
 {
-	TDocIdVector ResultsVec = CParser::GetInstance()->Parse( Query , strAnswer );
+	TDocIdVector ResultsVec = CParser::GetInstance()->Parse( Query );
 	return ResultsVec;
 }
 

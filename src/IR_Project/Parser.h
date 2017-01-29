@@ -8,8 +8,6 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-#include <afx.h>
-
 
 #include "DoxTree.h"
 #include "Utils.h"
@@ -48,11 +46,11 @@ private:
 	void		ParseThenOperator(const std::string& ThenOperator,
 									SOperator& rReturnOperator) const;
 
-	void		HandleUnrecognizedToken(const std::string& str ) const;
+	void		HandleUnrecognizedToken(const std::string& str) const;
 	bool		IsParamsNumberOK(const std::string& FuncName, int ParamsNum) const;
 	bool		IsBracketedExpression(std::string::const_iterator& str) const;
 	bool		IsDelimiter(const std::string& str) const;
-	bool		BuildTypedStringColl(std::string expression ,CString& str);
+	bool		BuildTypedStringColl(std::string expression);
 	void		BuildExpTree();
 	//second version, gives out an iterator
 	std::string	GetHighestOperator( OUT TTypedStringVector::iterator& HighestIt,
@@ -76,7 +74,7 @@ public:
 	virtual ~CParser();
 	static CParser* GetInstance();
 
-	TDocIdVector Parse(const std::string& expression, CString& strAnswer);
+	TDocIdVector Parse(const std::string& expression);
 	CDocsTree GetDoxTree() const			{	return m_DocsTree;	}
 	void PrintTree() const;
 
