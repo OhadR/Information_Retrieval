@@ -1,10 +1,7 @@
 /****************************************************************/
 /*						  Hash.H						        */
 /*				      by: Ohad Redlich							*/
-/*						2.10.2000								*/
-/*																*/
-/*		This version of HashTable is based on STL vector, which	*/ 
-/*				solves memory link problems.					*/
+/*						15.8.2000								*/
 /****************************************************************/
 
 
@@ -19,7 +16,7 @@
 #ifndef _HASH_H
 #define _HASH_H
 
-#include <vector>
+#include "DynamicVector.h"
 
 enum RecordStates {Value,NoValue,Deleted};
 
@@ -29,7 +26,7 @@ class CHashNode
 {
 public:
     CHashNode();
-    CHashNode(const T& val);
+    CHashNode(T val);
     
 	bool operator==(const CHashNode<T>& node);
 	void ClearNode();
@@ -47,17 +44,17 @@ public:
 	CHashTable(int size);
 	// Find returns the element in the HashTable that is equal to val
 	// using operator==. If the element wasn't found, it returns NULL
-	T*		Find(const T& val);
-	int		Insert(const T& val);
-	int		Remove(const T& val);
+	T*		Find(T val);
+	int		Insert(T val);
+	int		Remove(T val);
 	//Update allows to update a node without deleting it and inserting it back
-	bool	Update(const T& val);		//not in use
-	int		FindIndex(const T& val);	// finds the index of val (-1 if not found)
+	bool	Update(T val);		//not in use
+	int		FindIndex(T val);	// finds the index of val (-1 if not found)
 	void	Clear();
 
 private:  
-   unsigned int Hash(const T& val);
-   std::vector < CHashNode<T> > m_elements;
+   unsigned int Hash(T val);
+   CVector < CHashNode<T> > m_elements;
 
 };
 
@@ -73,7 +70,7 @@ CHashNode<T>::CHashNode()
 }
 
 template <class T>
-CHashNode<T>::CHashNode(const T& val)
+CHashNode<T>::CHashNode(T val)
 {
     value=val;
     state=Value;
@@ -98,15 +95,17 @@ void CHashNode<T>::ClearNode()
 /****************************************************************/
 
 template <class T>
-CHashTable<T>::CHashTable( int size )
-:	m_elements( size )
+CHashTable<T>::CHashTable( int size ) : m_elements( size )
 {
+    CHashNode<T> NullNode;
+    for (int index=0; index<size; index++)
+        m_elements.Insert(NullNode);
 }
 
 template <class T>
-unsigned int CHashTable<T>::Hash(const T& val) 
+unsigned int CHashTable<T>::Hash(T val) 
 {
-    return (val.HashValue() % m_elements.size());
+    return (val.HashValue() % m_elements.Size());
 }
 
 /**
@@ -114,14 +113,13 @@ unsigned int CHashTable<T>::Hash(const T& val)
   * if the table is full, and the index of T if insertion was successful
   **/
 template <class T>
-int CHashTable<T>::Insert(const T& val) 
+int CHashTable<T>::Insert(T val) 
 {
-	static int nTableSize = m_elements.size();
 	int initialPos = Hash(val);		//expected index in the vector
 	int pos = initialPos;
 	while (m_elements[pos].state == Value) 
 	{
-		pos = ++pos % nTableSize;
+		pos= ++pos % m_elements.Size();
 		if (pos == initialPos)		//we got to same place where started - table is full
 			return -1;
 	}
@@ -133,12 +131,12 @@ int CHashTable<T>::Insert(const T& val)
 
 
 template <class T>
-int CHashTable<T>::FindIndex(const T& val) 
+int CHashTable<T>::FindIndex(T val) 
 {
-  int initialPos = Hash(val);
+  int initialPos=Hash(val);
   int pos=initialPos;
   while (!(m_elements[pos].value==val)) {
-      pos= ++pos % m_elements.size();
+      pos= ++pos % m_elements.Size();
       if ((m_elements[pos].state==NoValue) || (pos==initialPos)) 
          return -1;
   }
@@ -146,10 +144,10 @@ int CHashTable<T>::FindIndex(const T& val)
 }
 
 template <class T>
-T* CHashTable<T>::Find(const T& val) 
+T* CHashTable<T>::Find(T val) 
 {
-  int pos = FindIndex(val);
-  if (pos != -1)
+  int pos=FindIndex(val);
+  if (pos!=-1)
 	  return &m_elements[pos].value; //returns the address of the item.
   else
      return NULL;
@@ -157,10 +155,10 @@ T* CHashTable<T>::Find(const T& val)
 
 
 template <class T>
-int CHashTable<T>::Remove(const T& val)
+int CHashTable<T>::Remove(T val)
 {
-  int pos = FindIndex(val);
-  if (pos < 0) 
+  int pos=FindIndex(val);
+  if (pos<0) 
      return -1;
   CHashNode<T> DeletedNode;
   DeletedNode.state=Deleted;
@@ -175,7 +173,7 @@ int CHashTable<T>::Remove(const T& val)
   * it returns true, otherwise false.
   **/
 template <class T>
-bool CHashTable<T>::Update(const T& val)
+bool CHashTable<T>::Update(T val)
 {
 	int pos = FindIndex( val );
 	//T* xxx = Find( val );
@@ -193,10 +191,11 @@ bool CHashTable<T>::Update(const T& val)
 template <class T>
 void CHashTable<T>::Clear()
 {
-	for( int i = 0; i < m_elements.size(); ++i )
+	for( int i = 0; i < m_elements.Size(); i++ )
 	{
 		m_elements[ i ].ClearNode();
 	}
+
 }
 
 

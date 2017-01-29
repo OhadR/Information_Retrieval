@@ -1,35 +1,25 @@
 /****************************************************************/
 /*						IndexFile.CPP					        */
 /*				      by: Ohad Redlich							*/
-/*						10.5.2001								*/
+/*						10.8.2000								*/
 /****************************************************************/
 
 #include "IndexFile.h"
-#include <cassert>
-#include <windows.h>
 
-using namespace std;
-
-void printf_pause()
-{
-	printf("press ENTER to continus... ");
-	getchar();
-}
 
 /****************************************************************/
 /*                class CIndexFile implementation               */
 /****************************************************************/
 
 
-CIndexFile::CIndexFile( const string& FileName, bool ReadOnly ) : m_File(NULL)
+CIndexFile::CIndexFile( const char* FileName, bool ReadOnly ) : m_File(NULL)
 {
 	if ( !Open( FileName, ReadOnly ) )
 	{
-		string Msg = "Error opening " + FileName;
-		MessageBox( NULL, Msg.c_str(), "WB Server Error", MB_OK | MB_ICONERROR );		
-		//printf("Error opening %s\n", FileName.c_str());	//ERROR!
-		//printf_pause();
+		/*
+		printf("Error opening %s\n", FileName);	//ERROR!
 		exit( 1 );
+		*/
 	}
 	
 	m_Line[0] = '\0';
@@ -41,10 +31,9 @@ CIndexFile::~CIndexFile()
 	Close();
 }
 
-bool CIndexFile::Open(const string& FileName, bool ReadOnly )
+bool CIndexFile::Open(const char* FileName, bool ReadOnly )
 {
-    assert(!FileName.empty());
-	m_File = fopen(FileName.c_str(), ReadOnly ? "r" : "w");
+    m_File = fopen(FileName, ReadOnly ? "r" : "w");
     if (m_File == NULL)
         return false;
     return true;
@@ -52,22 +41,18 @@ bool CIndexFile::Open(const string& FileName, bool ReadOnly )
 
 float CIndexFile::GetFloat()
 {
-    return GetFloat(true);		//true for moving on to next line
+    return GetFloat(true);		//true for read and stay in same line
 }
 
 int CIndexFile::GetInt()
 {
-    return GetInt( true );		//true for moving on to next line
+    return GetInt( true );		//true for read and stay in same line
 }
 
-int CIndexFile::GetHexa()
+void CIndexFile::GetString( char* Value, int Size)
 {
-    return GetHexa( true );		//true for moving on to next line
-}
-
-string CIndexFile::GetString()
-{
-    return GetString( true );	//true for moving on to next line
+	
+    GetString(Value, Size, true );	//true for read and stay in same line
 }
 
 int CIndexFile::GetIntAndWaitInSameLine()
@@ -75,50 +60,39 @@ int CIndexFile::GetIntAndWaitInSameLine()
     return GetInt( false /* SkipLine */);
 }
 
-int CIndexFile::GetHexaAndWaitInSameLine()
-{
-    return GetHexa( false /* SkipLine */);
-}
-
 float CIndexFile::GetFloatAndWaitInSameLine()
 {
     return GetFloat(false);
 }
 
-string CIndexFile::GetStringAndWaitInSameLine()
+void CIndexFile::GetStringAndWaitInSameLine(char * Value, int Size)
 {
-    return GetString( false );
+    GetString(Value, Size, false);
 }
 
-void CIndexFile::WriteInt( const int Value )
+void CIndexFile::WriteInt( int Value )
 {
 	int nWrittenBytes;
 	nWrittenBytes = fprintf( m_File, "%d", Value);
 }
 
-void CIndexFile::WriteHexa( const int Value )
-{
-	int nWrittenBytes;
-	nWrittenBytes = fprintf( m_File, "%X", Value);
-}
-
-void CIndexFile::WriteFloat( const float Value )
+void CIndexFile::WriteFloat( float Value )
 {
 	int nWrittenBytes;
 	nWrittenBytes = fprintf( m_File, "%f", Value);
 }
 
 //not in use since appearance very ugly (6.19543e-002, for example)
-void CIndexFile::WriteDouble( const double Value )
+void CIndexFile::WriteDouble( double Value )
 {
 	int nWrittenBytes;
 	nWrittenBytes = fprintf( m_File, "%e", Value);
 }
 
-void CIndexFile::WriteString( const string& Value )
+void CIndexFile::WriteString( const char* Value )
 {
 	int nWrittenBytes;
-	nWrittenBytes = fprintf( m_File, "%s", Value.c_str() );
+	nWrittenBytes = fprintf( m_File, "%s", Value);
 }
 
 void CIndexFile::WriteSpace()
@@ -133,87 +107,45 @@ void CIndexFile::WriteLine()
 	nWrittenBytes = fprintf( m_File, "\n");
 }
 
-void CIndexFile::FindString(const std::string& Value, bool FromStart)
-{
-	if( FromStart )
-		fseek(m_File, 0L, SEEK_SET );	//move file pointer to the start of file
-	string Str;
-	do {
-		Str = GetStringAndWaitInSameLine();
-		if( Str.empty() )
-			SkipLine();
-	} while(Str != Value)
-		;
-}
 
-bool CIndexFile::EndOfFile() const
+bool CIndexFile::EndOfFile()
 {
     return m_File == NULL || feof(m_File);
 }
 
 
-//go to the next non-commented not-empty line:
 bool CIndexFile::SkipLine()
 {
-	do
-	{
-		if (EndOfFile())
-			return false;
-		
-		fgets(m_Line, MAX_LINE_SIZE, m_File);
-		m_LineIsNew = true;
-	}	while( IsCommentLine() || IsEmptyLine() );
+	if (EndOfFile())
+		return false;
+
+	fgets(m_Line, MAX_LINE_SIZE, m_File);
+	m_LineIsNew = true;
 
     return true;
 }
 
 // private methods
 
-bool CIndexFile::IsCommentLine() const
-{
-    const char RemarkChar1 = '/';
-    const char RemarkChar2 = ';';
-    const char RemarkChar3 = '#';
-	
-    // A line which starts with remark char, or contains no tokens is not valid
-    return	m_Line[0] == '\0' || 
-			m_Line[0] == RemarkChar1 ||
-			m_Line[0] == RemarkChar2 ||
-			m_Line[0] == RemarkChar3 ;
-}
-
 int CIndexFile::GetInt( bool bSkipLine/* = true*/)
 {
     int Value;
-    string Token = GetNextToken();
-    if ( Token.empty() || sscanf(Token.c_str(), "%d", &Value) != 1)
-        Value = c_nIndexFileError;			//indicating an error
+    const char* Token = GetNextToken();
+    if (Token == NULL || sscanf(Token, "%d", &Value) != 1)
+        Value = -1;			//indicating an error
 
     if (bSkipLine)
 		SkipLine();
 
-    return Value;
-}
-
-int CIndexFile::GetHexa( bool bSkipLine)
-{
-    int Value;
-    string Token = GetNextToken();
-    if ( Token.empty() || sscanf(Token.c_str(), "%X", &Value) != 1)
-        Value = c_nIndexFileError;			//indicating an error
-	
-    if (bSkipLine)
-		SkipLine();
-	
     return Value;
 }
 
 float CIndexFile::GetFloat(bool bSkipLine)
 {
     float Value;
-    string Token = GetNextToken();
-    if (Token.empty() || sscanf(Token.c_str(), "%f", &Value) != 1)
-        Value = c_fIndexFileError;			//indicating an error
+    const char* Token = GetNextToken();
+    if (Token == NULL || sscanf(Token, "%f", &Value) != 1)
+        Value = (float)0;
 
     if (bSkipLine)
 		SkipLine();
@@ -221,21 +153,20 @@ float CIndexFile::GetFloat(bool bSkipLine)
     return Value;
 }
 
-string CIndexFile::GetString( bool bSkipLine)
+void CIndexFile::GetString(char * Value, int Size, bool bSkipLine)
 {
-	string Value;
-	string Token = GetNextToken();
-    if ( Token.empty() )
+	//char Value[100];			//not char*, preventing memory problems!
+	const char* Token = GetNextToken();
+    if ( Token == NULL )
 	{
-		return c_strIndexFileError;		//indicating an ERROR
+		Value = NULL;		//indicating an ERROR
+		return;
 	}
 
-	Value = Token;
+	strcpy(Value, Token);
 
     if (bSkipLine)
 		SkipLine();
-
-	return Value;
 }
 
 
@@ -249,27 +180,19 @@ void CIndexFile::Close()
 }
 
 
-static const string Delimiters = " \t\n";
+static const char* Delimiters = " \t\n";
 
 
-string CIndexFile::GetNextToken()
+const char* CIndexFile::GetNextToken()
 {
     // read token from current line:
-    const char* Token = strtok(m_LineIsNew ? m_Line : NULL, Delimiters.c_str());
-	
+    const char* Token = strtok(m_LineIsNew ? m_Line : NULL, Delimiters);
+
     // If it's End Of Line - return NULL:.
     if (Token == NULL)
     {
-		return "";
+		return NULL;
     }
     m_LineIsNew = false;
     return Token;
 }
-
-//returns true if the line consists nothing but delimiters
-bool CIndexFile::IsEmptyLine() const
-{
-	string Line = m_Line;
-	return Line.find_first_not_of(Delimiters) == string.npos;
-}
-
