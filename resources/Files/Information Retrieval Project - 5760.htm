@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0048)http://www.cs.biu.ac.il/~argamon/IR/project.html -->
+<HTML><HEAD><TITLE>Information Retrieval Project - 5760</TITLE>
+<META content="text/html; charset=windows-1255" http-equiv=Content-Type>
+<META content="MSHTML 5.00.2314.1000" name=GENERATOR></HEAD>
+<BODY>
+<CENTER>
+<H1>Information Retrieval and Filtering </H1>
+<H3>Programming assignment </H3>Due: 20 August, 2000<BR></CENTER>
+<P>Build a simple information retrieval engine based on the vector space model. 
+The program should provide three operations: 
+<UL>
+  <LI><B>build</B> <I>file list</I> <BR>Takes as input a set of text files (each 
+  one is a document), and computes the indexing files required for searching on 
+  the texts. 
+  <LI><B>search</B> <I>query terms</I> Takes a query, expressed as a list of 
+  words, and returns a ranked list of 20 document filenames giving the best 
+  documents matching the query (according to tf-idf). You do not have to 
+  implement the "+" operator. 
+  <LI><B>show</B> <I>rank</I> Shows the file with given rank, as if using 
+  "more". </LI></UL>
+<P>An example run on Unix could go as follows: 
+<P><B>% <I>search_assignment</I><BR>Command: <I>build 
+~argamon/Courses/IR/data/*.txt</I><BR>&nbsp;...Database created...<BR>Command: 
+<I>search tax increase decrease</I><BR>&nbsp;Documents found:
+<OL>
+  <LI>article-108.txt<BR>
+  <LI>article-522.txt<BR>
+  <LI>article-21.txt<BR>
+  <LI>article-1032.txt<BR>
+  <LI>article-433.txt<BR>
+  <LI>article-928.txt<BR>
+  <LI>article-19.txt<BR>
+  <LI>article-723.txt<BR>
+  <LI>article-954.txt<BR>
+  <LI>article-628.txt<BR>
+  <LI>article-300.txt<BR></LI></OL>Command: <I>show 
+1</I><BR>article-108.txt:<BR>SWEDEN RAISES FUEL TAXES TO FUND DEFENCE 
+SPENDING<BR>STOCKHOLM, April 1 - Sweden announced tax increases on<BR>petrol and 
+heating oil from July 1, 1987 to help finance a 1.7<BR>pct rise in defence 
+spending over the next five years.<BR>...<BR></B>
+<HR>
+
+<H3>Extra features</H3>The basic system is worth 90 points as a final project. 
+The following features can increase your grade (but not above 100). 
+<UL>
+  <LI>Operators <B>+</B> and <B>-</B>, indicating required and forbidden words, 
+  respectively. (10 points) 
+  <LI>Relevance feedback, using either the Rocchio formula or the probabilistic 
+  approach. (20 points) 
+  <LI>A graphic form-based user-interface, either using HTML/CGI or another 
+  graphic interface. (15 points) </LI></UL>
+<HR>
+
+<H3>Grading </H3>Programs will be graded on correctness, efficiency, and 
+clarity, including comments and documentation. You should hand in the following: 
+
+<UL>
+  <LI>Documentation describing how to install/run the program, as well as which 
+  extra options you have chosen to implement, 
+  <LI>A printout of the code, including useful comments, 
+  <LI>Print outs of three example searches, including: <I>tax increase</I> and 
+  <I>increase oil gas profits</I>. </LI></UL>
+<HR>
+
+<H3>Implementation Notes:</H3>
+<UL>
+  <LI>Data text files:<BR>They can be found in 
+  ~argamon/Courses/IR/data/article-*.txt 
+  <P></P>
+  <LI>Stemming:<BR>All words must be stemmed to a root form before indexing and 
+  before retrieval. Stemming code in C++ is in Porter.C and Porter.H in the 
+  IR/data directory. A test program is given in Porter_t.C. 
+  <P>This code also includes stopwords. 
+  <P>A version of the code that does not do stopwords is in PorterPlain.{C,H}. 
+  <P></P>
+  <LI>Word statistics: Term frequency = tf(w,d): this is the fraction of word 
+  occurrences in a given document d that are the word w:<BR><PRE>	tf(w,d) = Count(w,d) / Count(d)
+</PRE>
+  <P>Inverse document frequency = idf(w): this is the log of the inverse of the 
+  fraction of documents that contain the word w:<BR><PRE>	idf(w) = log(N/Num(w,d))
+</PRE>where N is the number of documents and Num(w,d) is the number of 
+  documents that contain the word w. 
+  <P>Normalization coefficient of a document = norm(d): this is the length of 
+  the document's tf-idf vector, given by:<BR><PRE>	norm(d) = SQRT( SUM_i [ tf(w_i, d) * idf(w_i) ]^2 )
+</PRE>
+  <P></P>
+  <LI>BUILD: This operation creates several index files as follows (the precise 
+  format is not important): 
+  <UL>
+    <P>
+    <LI>Dictionary: Gives the internal index numbers of all words found in the 
+    corpus. Should be read into a hashtable. Words stored here are *after* 
+    stemming. <PRE>word	index
+word	index
+...	...
+</PRE>
+    <LI>File index: Stores a list of the filenames of each document, with the 
+    document's sequential index for internal use, and the document's 
+    normalization coefficient. This shouuld be scanned into an array, so that 
+    indices can be turned into filenames. <PRE>filename   index	norm
+filename   index	norm
+filename   index	norm
+...	     ...	...
+</PRE>
+    <LI>Inverted index: This file stores the documents in which each word occurs 
+    and their associated tf values. The documents in each list should be sorted 
+    by their index values to make intersections and unions more efficient. The 
+    file should be read into an array of linked lists, one linked list for each 
+    word in the corpus. <PRE>wordindex	docindex / tf	docindex / tf ...
+wordindex	docindex / tf	docindex / tf ...
+wordindex	docindex / tf	docindex / tf ...
+...
+</PRE></LI></UL>
+  <P></P>
+  <LI>SEARCH: This operation creates a query structure, containing, for each 
+  word in the query: 
+  <UL>
+    <LI>The index of the stemmed word 
+    <LI>Its search weight </LI></UL>
+  <P>The search is carried out by accumulating a list of documents containing 
+  the union of the documents for each search term. Each document d in this list 
+  will have a rank associated with it which is computed as: <PRE>	SUM_i tf(w_i,d) * idf(w_i) * weight(w_i)
+	----------------------------------------
+			norm(d)
+</PRE>where w_i ranges over all terms in the search. 
+  <P>After the list is constructed, it should be sorted so that larger scores 
+  are first, and then it should be presented to the user. 
+  <P><B>Weighting search terms:</B> For now, the weight of each search term 
+  should be set to be the word's idf value. Later, we will extend this to 
+  include other possible weights for search terms. 
+  <P></P>
+  <LI>SHOW: This should use the ranked list to determine which document the user 
+  wants to see, find the associated file, and then show it using "more". 
+</LI></UL></BODY></HTML>
