@@ -9,66 +9,15 @@
 /*     constants to determine the paths and files names         */
 /****************************************************************/
 
-const char* DEFAULT_SEARCHED_FILES_PATH	= "D:\\MY DOCUMENTS\\IR_PROJECT\\FILES\\";
-const char* DEFAULT_OUTPUT_FILES_PATH	= "D:\\MY DOCUMENTS\\IR_PROJECT\\FILES\\";
+const string DEFAULT_SEARCHED_FILES_PATH= "D:\\MY DOCUMENTS\\IR_PROJECT\\FILES\\";
+const string DEFAULT_OUTPUT_FILES_PATH	= "D:\\MY DOCUMENTS\\IR_PROJECT\\FILES\\";
 
-const char* DICTIONARY_FILE_NAME		= "\\DICTIONARY.TXT";
-const char* FILE_INDEX_FILE_NAME		= "\\FILE_INDEX.TXT";
-const char* INVERTED_INDEX_FILE_NAME	= "\\INVERTED_INDEX.TXT";
-const char* IDF_FILE_NAME				= "\\IDF.TXT";
-const char* FILES_AND_RANKS				= "\\FILES_AND_RANKS.TXT";
+const string DICTIONARY_FILE_NAME		= "\\DICTIONARY.TXT";
+const string FILE_INDEX_FILE_NAME		= "\\FILE_INDEX.TXT";
+const string INVERTED_INDEX_FILE_NAME	= "\\INVERTED_INDEX.TXT";
+const string IDF_FILE_NAME				= "\\IDF.TXT";
+const string FILES_AND_RANKS			= "\\FILES_AND_RANKS.TXT";
 
-
-
-/****************************************************************/
-/*               class CHashedWord implementation               */
-/****************************************************************/
-
-CHashedWord::CHashedWord()
-{
-	m_nWordIndex	= 0;
-}
-
-
-int CHashedWord::HashValue() const
-{
-	int i = 0;			//index
-	int nHashVal = 0;	//hash value
-	while( m_Word[i] != '\0')
-	{
-		nHashVal += ( m_Word[i] * ( i+1 ) );
-		i++;
-	}
-	return nHashVal;
-}
-
-bool CHashedWord::operator ==(const CHashedWord& HashedWord)const
-{
-	if( !strcmp( m_Word, HashedWord.m_Word ) )	//strings are identical
-	{
-		return true;
-	}
-	return false;
-}
-
-CHashedWord& CHashedWord::operator = (const CHashedWord& HashedWord)
-{
-    strcpy(m_Word, HashedWord.m_Word);
-	m_nWordIndex = HashedWord.m_nWordIndex;
-
-    return *this;
-}
-
-/**
-  *	this operator is used to clean the node, when cleaning the hast table:
-  **/
-CHashedWord& CHashedWord::operator = ( void* something )
-{
-    strcpy( m_Word, "" );
-	m_nWordIndex = 0;
-
-    return *this;
-}
 
 
 /****************************************************************/
@@ -93,24 +42,24 @@ void CVectorianModel::Build( const char* SearchPath, const char* OutputPath, Sta
 
 	if( strcmp( OutputPath, "" ) == 0 )
 	{
-		strcpy( OUTPUT_FILES_PATH, DEFAULT_OUTPUT_FILES_PATH );
+		OUTPUT_FILES_PATH = DEFAULT_OUTPUT_FILES_PATH;
 	}
 	else
 	{
-		strcpy( OUTPUT_FILES_PATH, OutputPath );
+		OUTPUT_FILES_PATH = OutputPath;
 	}
 	
-	char pcTemp[ SIZE_OF_FILENAME ];
-	strcpy( pcTemp, OUTPUT_FILES_PATH );
-	strcat( pcTemp, DICTIONARY_FILE_NAME );
+	string pcTemp;
+	pcTemp = OUTPUT_FILES_PATH;
+	pcTemp += DICTIONARY_FILE_NAME ;
 	m_Dictionary = new CIndexFile( pcTemp, false );
 
-	strcpy( pcTemp, OUTPUT_FILES_PATH );
-	strcat( pcTemp, FILE_INDEX_FILE_NAME );
+	pcTemp = OUTPUT_FILES_PATH;
+	pcTemp += FILE_INDEX_FILE_NAME ;
 	m_FileIndex = new CIndexFile( pcTemp, false );
 
-	strcpy( pcTemp, OUTPUT_FILES_PATH );
-	strcat( pcTemp, INVERTED_INDEX_FILE_NAME );
+	pcTemp = OUTPUT_FILES_PATH;
+	pcTemp += INVERTED_INDEX_FILE_NAME ;
 	m_InvertedIndex = new CIndexFile( pcTemp, false );
 
 	if( !AreDBFilesOK() )
@@ -122,12 +71,12 @@ void CVectorianModel::Build( const char* SearchPath, const char* OutputPath, Sta
 
 	if( strcmp( SearchPath, "" ) == 0 )
 	{
-		strcpy( SEARCHED_FILES_PATH, DEFAULT_SEARCHED_FILES_PATH );
+		SEARCHED_FILES_PATH = DEFAULT_SEARCHED_FILES_PATH;
 	}
 	else
 	{
-		strcpy( SEARCHED_FILES_PATH, SearchPath );
-		strcat( SEARCHED_FILES_PATH, "\\");
+		SEARCHED_FILES_PATH = SearchPath;
+		SEARCHED_FILES_PATH += "\\";
 	}
 	
 	SearchStemmedFiles();
@@ -153,9 +102,9 @@ void CVectorianModel::InitializeBuild()
 	//will be empty!
 	m_HashTable.Clear();
 	//clean also this vector, since WordIndex is determeined by its size:
-	m_DocumentsVector.Clear();
-	m_WordsVector.Clear();
-	m_ListedVector.Clear();
+	m_DocumentsVector.clear();
+	m_WordsVector.clear();
+	m_ListedVector.clear();
 
 	m_ResultStatus	= OK;
 }
@@ -185,14 +134,12 @@ bool CVectorianModel::AreDBFilesOK()
   **/
 void CVectorianModel::SearchStemmedFiles()
 {
-	char cFileSpec[SIZE_OF_FILENAME];
+	string strFileSpec;
 	long hFile;
 	struct _finddata_t fileinfo;
 	m_DocAndWeight.DocumentIndex = -1;	//we update b4 entering, & cant in end otherwise index will b 2 big
   
-	//printf("dir %s\n", SEARCHED_FILES_PATH);	//good for console application:
-
-	sprintf( cFileSpec, "%s%s", SEARCHED_FILES_PATH, "*.STEM");
+	strFileSpec = SEARCHED_FILES_PATH + "*.STEM";
 	
 	//write header to Dictionary file:
 	m_Dictionary->WriteString( "Word" );
@@ -201,12 +148,8 @@ void CVectorianModel::SearchStemmedFiles()
 	m_Dictionary->WriteLine();
 
 	//open current directory
-	if ( (hFile = _findfirst( cFileSpec, &fileinfo)) == -1L)
+	if ( (hFile = _findfirst( strFileSpec.c_str(), &fileinfo)) == -1L)
 	{
-		/* //good for console application:
-		printf( "No files in current directory!\n" );
-		exit(1);
-		*/
 		m_ResultStatus = NO_FILES_IN_DIRECTORY;
 		return;
 	}	
@@ -228,7 +171,7 @@ void CVectorianModel::FileHandler( const struct _finddata_t fileinfo )
 {
 	FILE*	fp;       
 	char*	word;
-	char	fileName[SIZE_OF_FILENAME];
+	string	fileName;
 	char	line [MAXLINE];
 	int		nNumberOfWordsInDoc;
 	DocFileAndNorm		DocFileAndNorm;
@@ -239,16 +182,11 @@ void CVectorianModel::FileHandler( const struct _finddata_t fileinfo )
 	//new document - clear words counter:
 	nNumberOfWordsInDoc = 0;
 
-	sprintf( fileName, "%s%s", SEARCHED_FILES_PATH, fileinfo.name );
-	//printf( "FileName: %s\n", fileName );	//good for console application
+	fileName = SEARCHED_FILES_PATH + fileinfo.name;
 	   
 	//open file:
-	if ( (fp = fopen((fileName) , "r")) == NULL)
+	if ( (fp = fopen(fileName.c_str() , "r")) == NULL)
 	{
-		/* //good for console application:
-		printf("can't open file filename %s\n",fileName);
-		exit(1);
-		*/
 		m_ResultStatus = CANNOT_OPEN_FILE;
 		return;
 	}
@@ -270,28 +208,28 @@ void CVectorianModel::FileHandler( const struct _finddata_t fileinfo )
 	fclose (fp);
    	   
 	DocFileAndNorm.NumberOfWordsInDoc = nNumberOfWordsInDoc;
-	strcpy( DocFileAndNorm.DocumentFileName, fileinfo.name );
+	DocFileAndNorm.DocumentFileName = fileinfo.name;
 	DocFileAndNorm.Norm = double( 0 );
 
 	//make new entry in the vector for the DocFile&Norm:
-	m_DocumentsVector.Insert( DocFileAndNorm );
+	m_DocumentsVector.push_back( DocFileAndNorm );
 }
 
 
-void CVectorianModel::WordHandler( const char* Word )
+void CVectorianModel::WordHandler( const string Word )
 {
 	CHashedWord HashedWord;
 	WordInfo	WordInfo;
 	int nIndexInTable;
-	strcpy( HashedWord.m_Word, Word );
+	HashedWord.m_Word = Word;
 
 	nIndexInTable = m_HashTable.FindIndex( HashedWord );
 	if( nIndexInTable == -1)		//word is new (not in hash table)
 	{
 		//create a List object, so we can inset in the ListedVector:
-		CDoubleEndedList<DocAndWeight> list;
+		list<DocAndWeight> list;
 
-		HashedWord.m_nWordIndex = m_WordsVector.Size();
+		HashedWord.m_nWordIndex = m_WordsVector.size();
 		//insert new word into hash table:
 		m_HashTable.Insert( HashedWord );
 
@@ -299,11 +237,11 @@ void CVectorianModel::WordHandler( const char* Word )
 
 		m_DocAndWeight.NumberOfOccurrencesOfWordInDoc = 1;
 		//make new entry in the vector for the list:
-		m_ListedVector.Insert( list );
+		m_ListedVector.push_back( list );
 		//add word into the ListedVector as first element, by the index we got 
-		m_ListedVector[HashedWord.m_nWordIndex].AddToEnd( m_DocAndWeight );
+		m_ListedVector[HashedWord.m_nWordIndex].push_back( m_DocAndWeight );
 		//make new entry in the WordsVector, and keep the info there:
-		m_WordsVector.Insert( WordInfo );
+		m_WordsVector.push_back( WordInfo );
 		//write the word and it's index (in the vector) to dictionary file:
 		m_Dictionary->WriteString( Word );
 		m_Dictionary->WriteSpace();
@@ -319,14 +257,14 @@ void CVectorianModel::WordHandler( const char* Word )
 		//we give only the word, and get all information about it from hash table:
 		HashedWord = *m_HashTable.Find( HashedWord );
 		//if it's the first occurence of this word in this document
-		if( m_ListedVector[HashedWord.m_nWordIndex].GetLastElement()->DocumentIndex != m_DocAndWeight.DocumentIndex/*Nd*/ )
+		if( m_ListedVector[HashedWord.m_nWordIndex].back().DocumentIndex != m_DocAndWeight.DocumentIndex/*Nd*/ )
 		{
-			m_ListedVector[HashedWord.m_nWordIndex].AddToEnd( m_DocAndWeight );
+			m_ListedVector[HashedWord.m_nWordIndex].push_back( m_DocAndWeight );
 			
 			m_WordsVector[HashedWord.m_nWordIndex].nNumberOfDocuments++;
 		}
 		//increase # of occurences of this word in this doc:
-		m_ListedVector[HashedWord.m_nWordIndex].GetLastElement()->NumberOfOccurrencesOfWordInDoc++;
+		m_ListedVector[HashedWord.m_nWordIndex].back().NumberOfOccurrencesOfWordInDoc++;
 	}
 
 }
@@ -342,9 +280,9 @@ void CVectorianModel::WordHandler( const char* Word )
   **/
 void CVectorianModel::CalculateIDFandTF()
 {
-	char pcTemp[ SIZE_OF_FILENAME ];
-	strcpy( pcTemp, OUTPUT_FILES_PATH );
-	strcat( pcTemp, IDF_FILE_NAME );
+	string pcTemp;
+	pcTemp = OUTPUT_FILES_PATH;
+	pcTemp += IDF_FILE_NAME;
 
 	CIndexFile* IDFFile = new CIndexFile( pcTemp, false );
 	int nTotalNumberOfDocs = m_DocAndWeight.DocumentIndex + 1;
@@ -355,7 +293,7 @@ void CVectorianModel::CalculateIDFandTF()
 	IDFFile->WriteLine();
 
 	//running all over the words:
-	for( int i = 0; i < m_ListedVector.Size(); i++ )
+	for( int i = 0; i < m_ListedVector.size(); i++ )
 	{
 		m_InvertedIndex->WriteInt( i );
 		m_InvertedIndex->WriteSpace();
@@ -373,20 +311,23 @@ void CVectorianModel::CalculateIDFandTF()
 		// more than 50 elements in a row, I write "MORE->", start a new 
 		// line, and a tab.
 		int nItemsInRow = 0;
-		for (link<DocAndWeight> * p=m_ListedVector[i].first; p!=NULL; p = p->next )
+
+		list<DocAndWeight>::iterator it;
+		it = m_ListedVector[i].begin();
+		do
 		{
-			nIndex = p->value.DocumentIndex;
+			nIndex = it->DocumentIndex;
 			nNumOfWordsInDoc = m_DocumentsVector[ nIndex ].NumberOfWordsInDoc;
 			//calculating the TF for the word-document:
-			p->value.Weight = float( p->value.NumberOfOccurrencesOfWordInDoc ) / float( nNumOfWordsInDoc );
+			it->Weight = float( it->NumberOfOccurrencesOfWordInDoc ) / float( nNumOfWordsInDoc );
 			//write results to InvertedIndex file:
 			m_InvertedIndex->WriteInt( nIndex );
 			m_InvertedIndex->WriteString( " / " );
-			m_InvertedIndex->WriteFloat( p->value.Weight );	//Weight is the TF value for now
+			m_InvertedIndex->WriteFloat( it->Weight );	//Weight is the TF value for now
 			m_InvertedIndex->WriteSpace();
 
-			p->value.Weight *= float( m_WordsVector[ i ].dIDF );	//Weight is the TF*IDF value now
-			m_DocumentsVector[ nIndex ].Norm += ( p->value.Weight * p->value.Weight);
+			it->Weight *= float( m_WordsVector[ i ].dIDF );	//Weight is the TF*IDF value now
+			m_DocumentsVector[ nIndex ].Norm += ( it->Weight * it->Weight);
 
 			nItemsInRow++;
 			if( nItemsInRow == MAX_ITEMS_IN_ROW )
@@ -396,7 +337,7 @@ void CVectorianModel::CalculateIDFandTF()
 				m_InvertedIndex->WriteSpace();
 				nItemsInRow = 0;
 			}
-		}
+		} while ( ++it != m_ListedVector[i].end() );
 		m_InvertedIndex->WriteLine();
 	}
 	
@@ -414,7 +355,7 @@ bool CVectorianModel::PrintFileIndex()
 	m_FileIndex->WriteString( "Norm" );
 	m_FileIndex->WriteLine();
 
-	for( int i = 0; i < m_DocumentsVector.Size(); i++ )
+	for( int i = 0; i < m_DocumentsVector.size(); i++ )
 	{
 		m_FileIndex->WriteString( m_DocumentsVector[ i ].DocumentFileName );
 		m_FileIndex->WriteSpace();
@@ -451,10 +392,10 @@ void CVectorianModel::CloseFiles()
 /*				s e a r c  h					*/
 /************************************************/
 
-void myQsort (CVector< Search_DocFileAndNorm > & Vec, int left ,int right);
+void myQsort ( vector< Search_DocFileAndNorm > & Vec, int left ,int right);
 
 
-void CVectorianModel::Search( const char* OutputPath, const char* Query, char ResultsSortedVector[][SIZE_OF_FILENAME], Status& nSearchResultStatus ) 
+void CVectorianModel::Search( const char* OutputPath, const char* Query, string ResultsSortedVector[], Status& nSearchResultStatus ) 
 {
 	// opening the files and filling the storage structures is needed only
 	// if it is a first search. otherwise i can use the current data in 
@@ -466,24 +407,24 @@ void CVectorianModel::Search( const char* OutputPath, const char* Query, char Re
 
 		if( strcmp( OutputPath, "" ) == 0 )
 		{
-			strcpy( OUTPUT_FILES_PATH, DEFAULT_OUTPUT_FILES_PATH );
+			OUTPUT_FILES_PATH = DEFAULT_OUTPUT_FILES_PATH;
 		}
 		else
 		{
-			strcpy( OUTPUT_FILES_PATH, OutputPath );
+			OUTPUT_FILES_PATH = OutputPath;
 		}
 
-		char pcTemp[ SIZE_OF_FILENAME ];
-		strcpy( pcTemp, OUTPUT_FILES_PATH );
-		strcat( pcTemp, DICTIONARY_FILE_NAME );
+		string pcTemp;
+		pcTemp = OUTPUT_FILES_PATH ;
+		pcTemp += DICTIONARY_FILE_NAME ;
 		m_Dictionary = new CIndexFile( pcTemp );
 
-		strcpy( pcTemp, OUTPUT_FILES_PATH );
-		strcat( pcTemp, FILE_INDEX_FILE_NAME );
+		pcTemp = OUTPUT_FILES_PATH ;
+		pcTemp += FILE_INDEX_FILE_NAME ;
 		m_FileIndex = new CIndexFile( pcTemp );
 
-		strcpy( pcTemp, OUTPUT_FILES_PATH );
-		strcat( pcTemp, INVERTED_INDEX_FILE_NAME );
+		pcTemp = OUTPUT_FILES_PATH ;
+		pcTemp += INVERTED_INDEX_FILE_NAME ;
 		m_InvertedIndex = new CIndexFile( pcTemp );
 
 		if( !AreDBFilesOK() )
@@ -514,24 +455,24 @@ void CVectorianModel::Search( const char* OutputPath, const char* Query, char Re
 void CVectorianModel::InitializeSearch()
 {
 	m_HashTable.Clear();
-	m_SearchDocumentsVector.Clear();
-	m_WordsVector.Clear();
-	m_ListedVector.Clear();
+	m_SearchDocumentsVector.clear();
+	m_WordsVector.clear();
+	m_ListedVector.clear();
 }
 
 
 void CVectorianModel::FillHashTable()
 {
 	CHashedWord HashedWord;
-	char pcWord[ SIZE_OF_WORD ];
+	string strWord;
 	int nWordIndex;
 	m_Dictionary->SkipLine();
 	m_Dictionary->SkipLine();
 	while ( !m_Dictionary->EndOfFile() )
 	{
-		m_Dictionary->GetStringAndWaitInSameLine( pcWord, SIZE_OF_WORD );
+		strWord = m_Dictionary->GetStringAndWaitInSameLine();
 		nWordIndex = m_Dictionary->GetInt();	//read int and go to next line
-		strcpy( HashedWord.m_Word,  pcWord );
+		HashedWord.m_Word = strWord;
 		HashedWord.m_nWordIndex = nWordIndex;
 		m_HashTable.Insert( HashedWord );
 	}
@@ -541,29 +482,29 @@ void CVectorianModel::FillHashTable()
 void CVectorianModel::FillListedVector()
 {
 	//create a List object, so we can insert into the ListedVector:
-	CDoubleEndedList<DocAndWeight> list;
+	list<DocAndWeight> list;
 
 	DocAndWeight DocAndWeight;
-	char String[ 10 ];	//string for reading the '/'
+	string String;		//string for reading the '/'
 	int nWordIndex = 0;
 	m_InvertedIndex->SkipLine();
 	while ( !m_InvertedIndex->EndOfFile() )
 	{
 		nWordIndex = m_InvertedIndex->GetIntAndWaitInSameLine();
-		m_ListedVector.Insert( list );
+		m_ListedVector.push_back( list );
 		int nItemsInRow = 0;
 		while( (DocAndWeight.DocumentIndex = m_InvertedIndex->GetIntAndWaitInSameLine() ) != -1 )
 		{
-			m_InvertedIndex->GetStringAndWaitInSameLine( String, 10 );
+			String = m_InvertedIndex->GetStringAndWaitInSameLine();
 			DocAndWeight.Weight = m_InvertedIndex->GetFloatAndWaitInSameLine();
 
-			m_ListedVector[ nWordIndex ].AddToEnd( DocAndWeight );
+			m_ListedVector[ nWordIndex ].push_back( DocAndWeight );
 			
 			nItemsInRow++;
 			if( nItemsInRow == MAX_ITEMS_IN_ROW )	//maybe there are "MORE->"...
 			{
-				m_InvertedIndex->GetStringAndWaitInSameLine( String, 10 );
-				if( strcmp ( String, "MORE->" ) == 0 )
+				String = m_InvertedIndex->GetStringAndWaitInSameLine();
+				if( String == "MORE->" )
 				{
 					m_InvertedIndex->SkipLine();	//go to next line, but with the same word!
 				}
@@ -578,27 +519,27 @@ void CVectorianModel::FillListedVector()
 void CVectorianModel::FillDocumentsVector()
 {
 	Search_DocFileAndNorm Search_DocFileAndNorm;
-	char FileName[ SIZE_OF_FILENAME ];
+	string FileName;
 	int nDocumentIndex;
 	
 	m_FileIndex->SkipLine();
 	m_FileIndex->SkipLine();
 	while ( !m_FileIndex->EndOfFile() )
 	{
-		m_FileIndex->GetStringAndWaitInSameLine( FileName, SIZE_OF_FILENAME );
-		strcpy( Search_DocFileAndNorm.DocumentFileName, FileName );
+		FileName = m_FileIndex->GetStringAndWaitInSameLine();
+		Search_DocFileAndNorm.DocumentFileName = FileName;
 		nDocumentIndex = m_FileIndex->GetIntAndWaitInSameLine();
 		Search_DocFileAndNorm.Norm = m_FileIndex->GetFloat();
 		Search_DocFileAndNorm.fSearchRank = float( 0 );
 		
-		m_SearchDocumentsVector.Insert( Search_DocFileAndNorm ); 
+		m_SearchDocumentsVector.push_back( Search_DocFileAndNorm ); 
 	}
 }
 
 
 void CVectorianModel::ResetDocumentsVector()
 {
-	for( int i = 0; i < m_SearchDocumentsVector.Size(); i++ )
+	for( int i = 0; i < m_SearchDocumentsVector.size(); i++ )
 	{
 		//reset the = or - operator flag, for each document:
 		m_SearchDocumentsVector[ i ].DocStat = DONT_CARE;
@@ -635,13 +576,13 @@ void CVectorianModel::HandleQuery( const char* Query )
 }
 
 
-void CVectorianModel::QueryWordHandler( const char* Word )
+void CVectorianModel::QueryWordHandler( const string& Word )
 {
 	CHashedWord HashedWord;
 	int nIndexInTable;
 	int nIndexOfWordInVector;
 	char HandledWord[ SIZE_OF_WORD ];
-	strcpy( HandledWord, Word );
+	strcpy( HandledWord, Word.c_str() );
 	DocumentStatus DocStat = DONT_CARE;		//initializing
 	
 	if( HandledWord[0] == '+' )
@@ -654,15 +595,12 @@ void CVectorianModel::QueryWordHandler( const char* Word )
 		DocStat = FORBIDDEN;
 		strcpy( HandledWord, HandledWord + 1 );
 	}
-	strcpy( HashedWord.m_Word, HandledWord );
+	HashedWord.m_Word = HandledWord;
 
 	nIndexInTable = m_HashTable.FindIndex( HashedWord );
 
 	if( nIndexInTable == -1)		//word is not in hash table - it doesn't exist
 	{
-		/* //good for console application:
-		printf( "The word %s was not found in the table\n" );
-		*/
 		return;
 	}
 	else		//word was found in the table
@@ -673,29 +611,31 @@ void CVectorianModel::QueryWordHandler( const char* Word )
 		nIndexOfWordInVector = HashedWord.m_nWordIndex;
 
 		//calculating the IDF value of this word:
-		int nCount = m_ListedVector[nIndexOfWordInVector].GetLength();
-		double dIDF = log10( double( m_SearchDocumentsVector.Size() ) / double( nCount ) );
+		int nCount = m_ListedVector[nIndexOfWordInVector].size();
+		double dIDF = log10( double( m_SearchDocumentsVector.size() ) / double( nCount ) );
 
 		//for the current word, we pass all over it's Documents' list:
-		for (link<DocAndWeight> * p=m_ListedVector[nIndexOfWordInVector].first;	p!=NULL; p = p->next )
+		list<DocAndWeight>::iterator it;
+		it = m_ListedVector[nIndexOfWordInVector].begin();
+		do
 		{
-			float fSearchRank = p->value.Weight * (dIDF*dIDF) / m_SearchDocumentsVector[ p->value.DocumentIndex ].Norm;
-			m_SearchDocumentsVector[ p->value.DocumentIndex ].fSearchRank += fSearchRank;
+			float fSearchRank = it->Weight * (dIDF*dIDF) / m_SearchDocumentsVector[ it->DocumentIndex ].Norm;
+			m_SearchDocumentsVector[ it->DocumentIndex ].fSearchRank += fSearchRank;
 			//if DocStat is "-", word must not appear, so update all documents in any case.
 			//if its "+", then update only if in the vector its DONTCARE, because if in the
 			//vector its "+", there is no change, and if its "-" - do not change!
 			if ( DocStat == FORBIDDEN )
 			{
-				m_SearchDocumentsVector[ p->value.DocumentIndex ].DocStat = FORBIDDEN;	//high priority
+				m_SearchDocumentsVector[ it->DocumentIndex ].DocStat = FORBIDDEN;	//high priority
 			}
 			else if ( DocStat == REQUIRED )
 			{
-				if ( m_SearchDocumentsVector[ p->value.DocumentIndex ].DocStat == DONT_CARE )
+				if ( m_SearchDocumentsVector[ it->DocumentIndex ].DocStat == DONT_CARE )
 				{
-					m_SearchDocumentsVector[ p->value.DocumentIndex ].DocStat = REQUIRED;
+					m_SearchDocumentsVector[ it->DocumentIndex ].DocStat = REQUIRED;
 				}
 			}
-		}
+		}while ( ++it != m_ListedVector[nIndexOfWordInVector].end() );
 	}
 }
 
@@ -704,12 +644,12 @@ void CVectorianModel::QueryWordHandler( const char* Word )
   *  This method copies the documents vector to another vector, and sorts the
   *  new vector. the origion vector remains the same.
   **/
-void CVectorianModel::SortAndPrintDocuments( char ppcResultsSortedVector[][SIZE_OF_FILENAME] )
+void CVectorianModel::SortAndPrintDocuments( string ppcResultsSortedVector[] )
 {
 	bool	bRequiredIndicator = false;
-	char	pcTemp[ SIZE_OF_FILENAME ];
-	strcpy( pcTemp, OUTPUT_FILES_PATH );
-	strcat( pcTemp, FILES_AND_RANKS );
+	string	pcTemp;
+	pcTemp = OUTPUT_FILES_PATH;
+	pcTemp += FILES_AND_RANKS;
 
 	CIndexFile* FileAndRank = new CIndexFile( pcTemp, false );
 	//write header to "FilesAndRanks" file:
@@ -727,20 +667,17 @@ void CVectorianModel::SortAndPrintDocuments( char ppcResultsSortedVector[][SIZE_
 	FileAndRank->WriteLine();
 
 	//copying the DocumentsVector to a temporary one, using copy-constructor:
-	CVector< Search_DocFileAndNorm > SortedVector( m_SearchDocumentsVector );
-	CVector< Search_DocFileAndNorm > tempVec;
+	vector< Search_DocFileAndNorm > SortedVector( m_SearchDocumentsVector );
+	vector< Search_DocFileAndNorm > tempVec;
 
-	myQsort( SortedVector, 0, SortedVector.Size()-1 );
+	myQsort( SortedVector, 0, SortedVector.size()-1 );
 
 	//reading the vector to its end or till rank are 0 (it's sorted by the ranks, so
 	//I stop in the first 0)
-	for( int i=0; ( i < SortedVector.Size() )&&( SortedVector[ i ].fSearchRank != 0 ); i++ )
+	for( int i=0; ( i < SortedVector.size() )&&( SortedVector[ i ].fSearchRank != 0 ); i++ )
 	{
-		/* //good for console application:
-		printf( "%d. %s\t%f \n", i, SortedVector[ i ].DocumentFileName, SortedVector[ i ].fSearchRank );
-		*/
 		//can print a pair (file : rank) to file:
-		FileAndRank->WriteString( SortedVector[ i ].DocumentFileName );
+		FileAndRank->WriteString( SortedVector[ i ].DocumentFileName.c_str() );
 		FileAndRank->WriteSpace();
 		FileAndRank->WriteFloat( SortedVector[ i ].Norm );
 		FileAndRank->WriteSpace();
@@ -752,7 +689,7 @@ void CVectorianModel::SortAndPrintDocuments( char ppcResultsSortedVector[][SIZE_
 		//I want to insert the vector only files that their DocStat != FORBIDDEN:
 		if( SortedVector[ i ].DocStat != FORBIDDEN )
 		{
-			tempVec.Insert( SortedVector[ i ] ); 
+			tempVec.push_back( SortedVector[ i ] ); 
 		}
 		//I want an indicator if operator + was in use. if it was - show only 
 		//REQUIRED files. otherwise, show all DONT_CARE:
@@ -766,26 +703,26 @@ void CVectorianModel::SortAndPrintDocuments( char ppcResultsSortedVector[][SIZE_
 	int j = 0;
 	if( bRequiredIndicator == true )
 	{
-		for( i = 0; i < tempVec.Size(); i++ )
+		for( i = 0; i < tempVec.size(); i++ )
 		{
 			if( tempVec[ i ].DocStat == REQUIRED )
 			{
-				strcpy( ppcResultsSortedVector[ j ], tempVec[ i ].DocumentFileName );
+				ppcResultsSortedVector[ j ] = tempVec[ i ].DocumentFileName.c_str();
 				j++;
 			}
 		}
 	}
 	else
 	{
-		for( i = 0; i < tempVec.Size(); i++ )
+		for( i = 0; i < tempVec.size(); i++ )
 		{
-			strcpy( ppcResultsSortedVector[ i ], tempVec[ i ].DocumentFileName );
+			ppcResultsSortedVector[ i ] = tempVec[ i ].DocumentFileName.c_str();
 		}
 		j = i;	//j is END_OF_VECTOR
 	}
 
 	//indicator of end-of-vector to outer program (SearchAssignmentDlg):
-	strcpy( ppcResultsSortedVector[ j ], "END_OF_VECTOR" );
+	ppcResultsSortedVector[ j ] ="END_OF_VECTOR" ;
 
 	FileAndRank->Close();
 	delete FileAndRank;
@@ -794,7 +731,7 @@ void CVectorianModel::SortAndPrintDocuments( char ppcResultsSortedVector[][SIZE_
 
 
 
-void swap (CVector< Search_DocFileAndNorm > & Vec, int i, int j)
+void swap ( vector< Search_DocFileAndNorm > & Vec, int i, int j)
 { 
     Search_DocFileAndNorm temp;
 	temp = Vec[i];
@@ -802,7 +739,7 @@ void swap (CVector< Search_DocFileAndNorm > & Vec, int i, int j)
 	Vec[j] = temp;
 }
 
-void myQsort (CVector< Search_DocFileAndNorm > & Vec, int left ,int right)
+void myQsort ( vector< Search_DocFileAndNorm > & Vec, int left ,int right)
 {
 	int i, last;
 	if (left >= right)
@@ -828,11 +765,11 @@ void myQsort (CVector< Search_DocFileAndNorm > & Vec, int left ,int right)
   *  This method is used for the Show action - it fills the FilePath argument
   *  with the file-to-show path
   **/
-void CVectorianModel::Show( char* FilePath )
+void CVectorianModel::Show( string& FilePath )
 {
-	if(  strcmp( FilePath, "" ) == 0 )
+	if( FilePath == "" )
 	{
-		strcpy( FilePath, DEFAULT_SEARCHED_FILES_PATH );
+		FilePath = DEFAULT_SEARCHED_FILES_PATH;
 	}
 }
 
